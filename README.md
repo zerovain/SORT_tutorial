@@ -35,8 +35,8 @@ jupyter lab SORT_tutorial/notebooks
 
 ## Documentation
 
-Online documentation will be made available through Read the Docs. Until then,
-the notebooks in this repository contain the complete tutorials.
+The full documentation is available at
+[sort-tutorial.readthedocs.io](https://sort-tutorial.readthedocs.io/).
 
 ## License
 
