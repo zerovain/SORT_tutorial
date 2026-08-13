@@ -1,54 +1,41 @@
 # SORT tutorials
 
-Tutorials for [SORT](https://github.com/zerovain/SORT), a spatial
-transcriptomics method for learning spatially coherent gene-expression
-programs.
+This repository contains tutorials for
+[SORT](https://github.com/zerovain/SORT) (Spatial Orthogonal Regularized
+Transcriptomic decomposition), a computational method for discovering
+gene-expression programs in spatial transcriptomic atlases.
 
-## Installation
+## Contents
 
-Clone both repositories into the same parent directory and create the tested
-environment:
+- Tutorial 1: [Simulated spatial atlas](notebooks/00_simulated_atlas.ipynb)
+- Tutorial 2: [PDAC atlas](notebooks/01_pdac_atlas.ipynb)
+- Tutorial 3: [Mouse embryogenesis atlas](notebooks/02_embryogenesis.ipynb)
+
+The simulated dataset is included in this repository. The PDAC and mouse
+embryogenesis tutorials provide preparation scripts for data obtained from the
+original public repositories.
+
+## Getting started
+
+Install SORT by following the instructions in the
+[SORT repository](https://github.com/zerovain/SORT#installation), then clone
+this repository:
 
 ```bash
-git clone https://github.com/zerovain/SORT.git
 git clone https://github.com/zerovain/SORT_tutorial.git
-conda env create -f SORT/environment.yml
-conda activate sort-paper-release
-python -m pip install -e 'SORT[docs]'
 ```
 
-Open the notebooks with Jupyter:
+The tutorials can be viewed directly on GitHub or opened locally with Jupyter:
 
 ```bash
 jupyter lab SORT_tutorial/notebooks
 ```
 
-## Tutorials
+## Documentation
 
-1. [Simulated spatial atlas](notebooks/00_simulated_atlas.ipynb): complete
-   seed-03 simulation with 10,368 locations, 5,000 modeled genes and eight
-   sections.
-2. [Complete PDAC atlas](notebooks/01_pdac_atlas.ipynb): complete 108-section
-   GSE282302 PDAC atlas.
-3. [Mouse embryogenesis atlas](notebooks/02_embryogenesis.ipynb): complete
-   eight-stage MOSTA embryogenesis series.
-
-Only the author-generated simulation H5AD is distributed. The biological
-tutorials link to the original repositories and use the assembly scripts under
-`prepare/`; processed third-party H5AD files stay local. Normalization,
-`log1p`, highly variable gene selection and graph construction are shown in the
-notebooks.
-
-The paired Python sources can regenerate the notebooks or export static pages:
-
-```bash
-python build_docs.py
-python build_docs.py --format html
-```
-
-Full paper reproduction, including datasets not used as public tutorials,
-remains in the companion manuscript-analysis archive.
+Online documentation will be made available through Read the Docs. Until then,
+the notebooks in this repository contain the complete tutorials.
 
 ## License
 
-The tutorial code is released under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
