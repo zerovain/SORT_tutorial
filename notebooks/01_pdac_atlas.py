@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: sort-paper-release
 #     language: python
@@ -19,10 +19,11 @@
 #
 # This tutorial jointly models all 108 Visium sections from 39 patients in
 # [GSE282302](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE282302).
-# Download the source data and assemble the count atlas with
-# `prepare/prepare_pdac_atlas.py`. The tutorial then follows the
-# graph-corrected manuscript workflow and illustrates transcriptomic program
-# identity and section-dependent spatial colocalization.
+# Download the Visium count matrices and spatial coordinates from GEO, combine
+# the sections in their original order, and save the local input as
+# `data/pdac/pdac_atlas_counts.h5ad`. Processed third-party data are not
+# distributed with this repository. The tutorial illustrates transcriptomic
+# program identity and section-dependent spatial colocalization.
 
 # %%
 from pathlib import Path

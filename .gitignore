@@ -15,4 +15,4 @@ outputs/
 tutorial_outputs/
 .DS_Store
 !tests/data/*.npz
-!data/simulation/seed_0003.h5ad
+!data/simulation/simulation.h5ad

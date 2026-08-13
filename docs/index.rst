@@ -6,6 +6,10 @@ This site contains tutorials for `SORT
 Transcriptomic decomposition), a method for discovering gene-expression
 programs in spatial transcriptomic atlases.
 
+.. image:: _static/sort_overview.png
+   :alt: Overview of the SORT framework
+   :width: 100%
+
 Tutorials
 ---------
 
@@ -15,12 +19,6 @@ Tutorials
    Tutorial 1: Simulated spatial atlas <tutorials/00_simulated_atlas>
    Tutorial 2: PDAC atlas <tutorials/01_pdac_atlas>
    Tutorial 3: Mouse embryogenesis atlas <tutorials/02_embryogenesis>
-
-.. toctree::
-   :hidden:
-
-   TUTORIALS
-   DATA_AVAILABILITY
 
 Getting started
 ---------------
@@ -41,9 +39,8 @@ Then clone the tutorial repository:
 
    git clone https://github.com/zerovain/SORT_tutorial.git
 
-The simulated input is included. The PDAC and mouse embryogenesis tutorials
-provide preparation scripts for data obtained from the original public
-repositories; processed third-party datasets are not redistributed.
+The simulated input is included. The PDAC and mouse embryogenesis datasets can
+be obtained from the public repositories linked in their respective tutorials.
 
 Output
 ------

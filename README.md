@@ -5,6 +5,8 @@ This repository contains tutorials for
 Transcriptomic decomposition), a computational method for discovering
 gene-expression programs in spatial transcriptomic atlases.
 
+![Overview of the SORT framework](docs/_static/sort_overview.png)
+
 ## Contents
 
 - Tutorial 1: [Simulated spatial atlas](notebooks/00_simulated_atlas.ipynb)
@@ -12,8 +14,8 @@ gene-expression programs in spatial transcriptomic atlases.
 - Tutorial 3: [Mouse embryogenesis atlas](notebooks/02_embryogenesis.ipynb)
 
 The simulated dataset is included in this repository. The PDAC and mouse
-embryogenesis tutorials provide preparation scripts for data obtained from the
-original public repositories.
+embryogenesis datasets can be obtained from the public repositories linked in
+their respective tutorials.
 
 ## Getting started
 

@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: sort-paper-release
 #     language: python
@@ -22,6 +22,9 @@
 # for fitting, spatial coordinates and simulated ground truth. We normalize the
 # counts, fit a common set of programs and compare the recovered spatial
 # activities with the known programs.
+#
+# The input file `data/simulation/simulation.h5ad` is included in this
+# repository.
 
 # %%
 from pathlib import Path
@@ -35,11 +38,11 @@ import sort
 
 
 # %% [markdown]
-# Load the bundled seed-03 atlas. The stored graph connects neighboring
+# Load the bundled simulated atlas. The stored graph connects neighboring
 # locations within each section and contains no edges between sections.
 
 # %%
-adata = sc.read_h5ad(Path("../data/simulation/seed_0003.h5ad"))
+adata = sc.read_h5ad(Path("../data/simulation/simulation.h5ad"))
 adata
 
 

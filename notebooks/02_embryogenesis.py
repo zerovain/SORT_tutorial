@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: sort-paper-release
 #     language: python
@@ -19,9 +19,11 @@
 #
 # This tutorial jointly models eight MOSTA Stereo-seq stages from E9.5 to E16.5.
 # Download the stage H5AD files from the
-# [MOSTA data portal](https://db.cngb.org/stomics/mosta/) and assemble them with
-# `prepare/prepare_embryogenesis.py`. We summarize temporal deployment
-# across all GEPs and then visualize five programs highlighted in the manuscript.
+# [MOSTA data portal](https://db.cngb.org/stomics/mosta/), combine the eight
+# stages, and save the local input as
+# `data/embryogenesis/embryogenesis_counts.h5ad`. Processed third-party data are
+# not distributed with this repository. We summarize temporal deployment across
+# all GEPs and visualize five programs highlighted in the manuscript.
 
 # %%
 from pathlib import Path
