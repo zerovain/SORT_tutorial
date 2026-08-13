@@ -78,25 +78,7 @@ names are the arguments used by ``sort.fit`` or by the graph-building helper.
    * - :math:`\lambda_{-,Q}`
      - ``lambda_neg``
      - Penalizes negative values in the signal profiles.
-   * - :math:`\varepsilon_{\mathrm{TV}}`
-     - ``tv_epsilon``
-     - Smooths the absolute differences used by graph TV for numerical
-       stability.
-   * - Two optimization stages
-     - ``stage1_epochs``, ``stage2_epochs`` and ``adam_steps``
-     - Sets the Stage 1 and Stage 2 epoch counts and the number of Riemannian
-       Adam profile updates per Stage 2 epoch.
-   * - TV update schedule
-     - ``tv_stage`` and ``tv_update_freq``
-     - Selects the stage in which graph TV is active and how often its IRLS
-       weights are refreshed.
-   * - random seed
-     - ``random_state``
-     - Controls reproducible initialization.
 
-With ``l1_weight_strategy="adaptive"``, ``lambda_l1_W`` and
-``lambda_l1_Q`` are base values used to calculate component-specific sparsity
-weights after initialization; those weights are then held fixed during fitting.
 The high-level defaults shared by most biological analyses are:
 
 .. code-block:: python
@@ -108,22 +90,11 @@ The high-level defaults shared by most biological analyses are:
        lambda_l1_W=0.3,
        lambda_l1_Q=300,
        lambda_neg=1.0,
-       use_tv=True,
-       tv_epsilon=0.01,
-       tv_update_freq=5,
-       tv_stage="stage2",
-       stage1_epochs=50,
-       stage2_epochs=100,
-       adam_steps=40,
-       random_state=42,
    )
 
-Individual tutorials show the settings used for their datasets. ``beta`` is a
-deprecated argument retained only for compatibility with older scripts; it is
-not part of the current loss and should not be tuned. Signal-profile
+Individual tutorials show the settings used for their datasets. Signal-profile
 orthogonality is enforced directly by the Stiefel constraint throughout both
-optimization stages. The internal Adam coefficients ``beta1`` and ``beta2``
-are unrelated to this deprecated argument.
+optimization stages.
 
 Output
 ------
