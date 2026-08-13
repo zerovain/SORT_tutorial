@@ -1,0 +1,7 @@
+sphinx>=7.1,<8
+nbsphinx>=0.9,<1
+sphinx-rtd-theme>=2,<4
+myst-parser>=2,<3
+ipython>=8,<10
+jupytext>=1.16,<2
+nbconvert>=7.8,<8

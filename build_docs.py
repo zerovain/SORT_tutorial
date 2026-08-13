@@ -3,6 +3,7 @@
 
 import argparse
 import importlib.util
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -10,13 +11,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCES = sorted((ROOT / "notebooks").glob("[0-9][0-9]_*.py"))
+DOC_NOTEBOOKS = ROOT / "docs" / "tutorials"
 
 
 def require(module: str) -> None:
     if importlib.util.find_spec(module) is None:
         raise SystemExit(
-            f"{module!r} is required; install SORT with its docs extra: "
-            "python -m pip install -e 'SORT[docs]'"
+            f"{module!r} is required; install the tutorial requirements: "
+            "python -m pip install -r docs/requirements.txt"
         )
 
 
@@ -52,6 +54,10 @@ def main() -> None:
                 check=True,
                 cwd=notebook.parent,
             )
+
+    DOC_NOTEBOOKS.mkdir(parents=True, exist_ok=True)
+    for notebook in notebooks:
+        shutil.copy2(notebook, DOC_NOTEBOOKS / notebook.name)
 
     if args.format != "none":
         output = ROOT / args.output_dir
