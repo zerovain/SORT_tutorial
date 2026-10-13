@@ -19,18 +19,26 @@
 #
 # This tutorial jointly models all 108 Visium sections from 39 patients in
 # [GSE282302](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE282302).
-# Download the Visium count matrices and spatial coordinates from GEO, combine
-# the sections in their original order, and save the local input as
-# `data/pdac/pdac_atlas_counts.h5ad`. Processed third-party data are not
-# distributed with this repository. The tutorial illustrates transcriptomic
-# program identity and section-dependent spatial colocalization.
+# We identify tumor and microenvironment programs and compare their spatial
+# overlap across sections. Download the original count matrices and spatial
+# coordinates from the [GEO data record](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE282302)
+# and combine them in an AnnData object saved as
+# `data/pdac/pdac_atlas_counts.h5ad` under the tutorial repository root.
+#
+# Store counts in `adata.X`, gene symbols in `var_names` and coordinates in
+# `obsm['spatial']`. In `obs`, use `sample_id` for section identifiers;
+# `sample_name` can store the corresponding GEO names. The displayed examples use
+# section identifiers 0–107 from the paper's reference atlas. Match genes to a
+# common column order, keeping coordinates and metadata aligned by row.
 
 # %%
 from pathlib import Path
 
+from IPython.display import display
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import numpy as np
+import pandas as pd
 import scanpy as sc
 from scipy import sparse
 
@@ -38,8 +46,9 @@ import sort
 
 
 # %% [markdown]
-# Load the merged count atlas. `sample_id` follows the 0–107 section order used
-# by the manuscript analysis, while `sample_name` retains the GEO section name.
+# ## 1. Load and preprocess the atlas
+#
+# Load the count atlas with its section identifiers.
 
 # %%
 adata = sc.read_h5ad(Path("../data/pdac/pdac_atlas_counts.h5ad"))
@@ -48,8 +57,7 @@ adata
 
 # %% [markdown]
 # Filter locations and genes, normalize library sizes, log-transform the
-# expression matrix and select 10,000 batch-aware highly variable genes. This
-# is the preprocessing order used for the manuscript fit.
+# expression matrix and select 10,000 batch-aware highly variable genes.
 
 # %%
 detected_per_location = np.asarray((adata.X > 0).sum(axis=1)).ravel()
@@ -85,9 +93,10 @@ adata
 
 
 # %% [markdown]
-# Build a 24-neighbour graph independently within every section. The graph is
-# assembled by global row index, so section labels and expression rows remain
-# aligned even when section names have a non-numeric lexical order.
+# ## 2. Build the spatial graph and fit SORT
+#
+# Build a 24-neighbour graph within each section to supply the spatial
+# relationships used by SORT. The combined graph follows the expression row order.
 
 # %%
 sort.build_per_sample_graph(
@@ -96,9 +105,8 @@ sort.build_per_sample_graph(
 
 
 # %% [markdown]
-# Fit the 40-component PDAC model. The package defaults provide the manuscript
-# values for spatial regularization, adaptive L1 weighting, total variation,
-# optimization epochs and random seed.
+# Next, fit the 40-component PDAC model, comprising one background and 39 signal
+# components, using the package defaults for regularization and optimization.
 
 # %%
 result = sort.fit(
@@ -110,10 +118,50 @@ result
 
 
 # %% [markdown]
-# Conditional gene–GEP coefficients summarize how representative PDAC and
-# microenvironment genes relate to selected programs after accounting for the
-# other fitted activities. They are used for annotation, not as differential
-# expression statistics.
+# ## 3. Inspect and select programs
+#
+# Start with the ten genes with the largest positive weights in each signal
+# profile. These genes describe the program's gene composition. Combine them
+# with the gene associations and spatial maps below to identify programs of
+# interest.
+
+# %%
+top_positive_genes = pd.DataFrame([
+    {
+        "GEP": f"GEP{k:02d}",
+        "Top positive genes": ", ".join(
+            pd.Series(result.Q[:, k], index=result.gene_names)
+            .loc[lambda weights: weights > 0].nlargest(10).index
+        ),
+    }
+    for k in range(1, result.Q.shape[1])
+]).set_index("GEP")
+with pd.option_context("display.max_rows", None, "display.max_colwidth", None):
+    display(top_positive_genes)
+
+# %% [markdown]
+# Choose the components and sections to visualize in the configuration below.
+# The defaults use the example's component indices; update them for your fit.
+# Indices refer directly to columns of `result.W` and `result.Q`, with the
+# background component at index 0. The spatial maps help refine your selection.
+
+# %%
+programs = {"classical": 8, "basal": 16}
+display_geps = [
+    2, 30, 29, programs["classical"], 1, programs["basal"],
+    21, 32, 28, 4, 15, 14, 20, 11,
+]
+sections = ["68", "10"]
+assert all(0 < gep < result.W.shape[1] for gep in display_geps + list(programs.values()))
+
+# %% [markdown]
+# ## 4. Examine gene associations
+#
+# Relate the recovered activities to representative PDAC and microenvironment
+# genes using conditional gene–GEP coefficients, which account for the other
+# fitted activities and provide gene-level evidence for annotation.
+# Standardize each gene's coefficients across all signal programs, then display
+# the selected programs to highlight their relative gene associations.
 
 # %%
 signature_genes = {
@@ -132,7 +180,6 @@ signature_genes = {
     "T cell": ["CD3D", "PTPRC", "IL7R", "CD3E"],
     "B cell": ["CD37", "LTB", "CXCR4", "CD53"],
 }
-display_geps = [2, 30, 29, 8, 1, 16, 21, 32, 28, 4, 15, 14, 20, 11]
 genes = [gene for module in signature_genes.values() for gene in module]
 gene_index = adata.var_names.get_indexer(genes)
 if np.any(gene_index < 0):
@@ -142,7 +189,7 @@ association = sort.compute_posthoc_b(
     adata.X[:, gene_index],
     result.W[:, 1:],
     gene_names=genes,
-    component_names=[f"GEP{i:02d}" for i in range(1, 40)],
+    component_names=[f"GEP{i:02d}" for i in range(1, result.W.shape[1])],
     return_stats=False,
 )
 z = (association.B - association.B.mean(axis=1, keepdims=True)) / association.B.std(axis=1, keepdims=True)
@@ -171,25 +218,26 @@ plt.show()
 
 
 # %% [markdown]
-# GEP08 and GEP16 represent classical- and basal-associated tumor programs.
-# Their transcriptomic profiles are distinct, whereas their spatial activities
-# can overlap strongly in one section and remain separated in another.
+# ## 5. Compare spatial overlap across sections
+#
+# Compare the selected classical- and basal-associated programs across the two
+# sections. The first two columns show their activities; the third distinguishes
+# locations in the top 20% for either program or both within each section.
 
-# %% {"alt": "Classical- and basal-associated SORT activities in PDAC sections with high and low spatial colocalization."}
-sections = [("68", "High colocalization"), ("10", "Low colocalization")]
+# %% {"alt": "Spatial activities and top-20% overlap states for the two selected PDAC programs."}
 fig, axes = plt.subplots(2, 3, figsize=(7.2, 4.5))
-for row, (section, title) in enumerate(sections):
+for row, section in enumerate(sections):
     mask = adata.obs["sample_id"].astype(str).to_numpy() == section
     xy = np.asarray(adata.obsm["spatial"])[mask]
-    first = result.W[mask, 8]
-    second = result.W[mask, 16]
+    first = result.W[mask, programs["classical"]]
+    second = result.W[mask, programs["basal"]]
     first_cut = np.quantile(first, 0.80)
     second_cut = np.quantile(second, 0.80)
     first_high = first >= first_cut
     second_high = second >= second_cut
     for column, (values, cmap, label) in enumerate((
-        (first, "Reds", "GEP08 classical"),
-        (second, "Blues", "GEP16 basal"),
+        (first, "Reds", f"GEP{programs['classical']:02d} classical"),
+        (second, "Blues", f"GEP{programs['basal']:02d} basal"),
     )):
         axes[row, column].scatter(xy[:, 0], xy[:, 1], c=values, s=2.2,
                                   cmap=cmap, linewidths=0, rasterized=True)
@@ -201,8 +249,9 @@ for row, (section, title) in enumerate(sections):
     axes[row, 2].scatter(xy[:, 0], xy[:, 1], c=states, s=2.2,
                          linewidths=0, rasterized=True)
     axes[row, 2].set_title("Top-20% states" if row == 0 else "", fontsize=8)
-    axes[row, 0].set_ylabel(f"{title}\nsection {section}", rotation=0,
-                            ha="right", va="center", fontsize=8)
+    axes[row, 0].text(-0.08, 0.5, f"Section {section}",
+                      transform=axes[row, 0].transAxes,
+                      ha="right", va="center", fontsize=8)
     for ax in axes[row]:
         ax.set_aspect("equal")
         ax.invert_yaxis()
@@ -211,8 +260,8 @@ fig.subplots_adjust(left=0.16, right=0.99, bottom=0.02, top=0.94,
                     wspace=0.05, hspace=0.08)
 fig.legend(
     handles=[
-        Patch(color="#D95F5F", label="GEP08 only"),
-        Patch(color="#4C78A8", label="GEP16 only"),
+        Patch(color="#D95F5F", label=f"GEP{programs['classical']:02d} only"),
+        Patch(color="#4C78A8", label=f"GEP{programs['basal']:02d} only"),
         Patch(color="#7A3E9D", label="Both"),
         Patch(color="#E6E6E6", label="Neither"),
     ],

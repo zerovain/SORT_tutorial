@@ -18,18 +18,26 @@
 # # Mouse embryogenesis atlas
 #
 # This tutorial jointly models eight MOSTA Stereo-seq stages from E9.5 to E16.5.
-# Download the stage H5AD files from the
-# [MOSTA data portal](https://db.cngb.org/stomics/mosta/), combine the eight
-# stages, and save the local input as
-# `data/embryogenesis/embryogenesis_counts.h5ad`. Processed third-party data are
-# not distributed with this repository. We summarize temporal deployment across
-# all GEPs and visualize five programs highlighted in the manuscript.
+# We summarize temporal deployment across all GEPs and visualize neural,
+# epithelial, chondrogenic and contractile programs. Use one section per stage
+# for this example. Download the stage H5AD files
+# from the [MOSTA download page](https://db.cngb.org/stomics/mosta/download/), combine them
+# by an outer join over genes and save the input as
+# `data/embryogenesis/embryogenesis_counts.h5ad` under the tutorial repository root.
+# Use a common gene column order and a sparse count matrix, filling genes absent
+# from a stage with zeros. Keep coordinates and metadata aligned by row.
+#
+# Store counts in `adata.X`, gene symbols in `var_names` and original spatial
+# coordinates in `obsm['spatial']`. In `obs`, `slice_id` identifies stages
+# (`E9.5` through `E16.5`) and `annotation` contains the atlas anatomical labels.
 
 # %%
 from pathlib import Path
 
+from IPython.display import display
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scanpy as sc
 from scipy import sparse
 
@@ -40,6 +48,8 @@ stages = ["E9.5", "E10.5", "E11.5", "E12.5", "E13.5", "E14.5", "E15.5", "E16.5"]
 
 
 # %% [markdown]
+# ## 1. Load and preprocess the atlas
+#
 # Load the outer-joined count atlas. Each location retains its developmental
 # stage, anatomical annotation and original spatial coordinates.
 
@@ -49,7 +59,7 @@ adata
 
 
 # %% [markdown]
-# Reproduce the manuscript preprocessing: retain locations with at least 50
+# Retain locations with at least 50
 # detected genes, keep genes detected in at least 0.1% of retained locations,
 # normalize and log-transform, and select 8,000 stage-aware highly variable
 # genes.
@@ -76,6 +86,8 @@ adata
 
 
 # %% [markdown]
+# ## 2. Build the spatial graph and fit SORT
+#
 # Construct an eight-neighbour graph independently within each developmental
 # stage, then combine the graphs using the atlas row indices.
 
@@ -86,9 +98,9 @@ sort.build_per_sample_graph(
 
 
 # %% [markdown]
-# The embryogenesis fit uses stronger profile sparsity and a different balance
-# between spatial and orthogonality penalties than the common biological-data
-# settings. Initialization uses the package defaults and the fixed random seed.
+# Next, fit SORT with one background and 59 signal components using the
+# embryogenesis spatial and sparsity weights. Initialization and optimization
+# settings use the package defaults.
 
 # %%
 result = sort.fit(
@@ -96,7 +108,6 @@ result = sort.fit(
     n_components=60,
     use_highly_variable=False,
     alpha=0.4,
-    beta=0.2,
     lambda_l1_W=0.4,
     lambda_l1_Q=800,
 )
@@ -104,9 +115,50 @@ result
 
 
 # %% [markdown]
-# Mean activity within each stage reveals early, intermediate and progressively
-# increasing temporal programs. Rows are ordered by peak stage and temporal
-# center of mass for display only.
+# ## 3. Inspect and select programs
+#
+# Inspect the ten genes with the largest positive weights in each signal
+# profile, then select programs to follow across development. Combine these
+# gene profiles with the spatial maps and atlas annotations below.
+
+# %%
+top_positive_genes = pd.DataFrame([
+    {
+        "GEP": f"GEP{k:02d}",
+        "Top positive genes": ", ".join(
+            pd.Series(result.Q[:, k], index=result.gene_names)
+            .loc[lambda weights: weights > 0].nlargest(10).index
+        ),
+    }
+    for k in range(1, result.Q.shape[1])
+]).set_index("GEP")
+with pd.option_context("display.max_rows", None, "display.max_colwidth", None):
+    display(top_positive_genes)
+
+# %% [markdown]
+# Set the component index, program label and atlas annotation for each example.
+# The defaults use the example's component indices; update them for your fit.
+# Indices refer directly to columns of `result.W` and `result.Q`, with the
+# background component at index 0. The spatial maps help refine your selection.
+
+# %%
+examples = [
+    (25, "Chondrogenic", "Cartilage"),
+    (31, "Epithelial", "Epidermis"),
+    (2, "Neural", "Brain"),
+    (6, "Sarcomeric", "Muscle"),
+    (43, "Smooth-contractile", "Smooth muscle"),
+]
+assert all(0 < gep < result.W.shape[1] for gep, _, _ in examples)
+
+# %% [markdown]
+# ## 4. Summarize activity across developmental stages
+#
+# Calculate mean activity within each stage to compare temporal patterns across
+# all signal GEPs. Scale each program to its highest stage mean and order the
+# heatmap rows by peak stage and temporal center of mass. Colors show each
+# program's relative activity across stages, with its maximum set to 1.
+# Bold GEP labels mark the five programs selected above.
 
 # %%
 stage_labels = adata.obs["slice_id"].astype(str).to_numpy()
@@ -122,34 +174,32 @@ order = np.lexsort((center, peak))
 
 
 # %% {"alt": "Stage-wise activity of all 59 embryogenesis signal GEPs."}
-fig, ax = plt.subplots(figsize=(7.2, 5.2))
+fig, ax = plt.subplots(figsize=(7.2, 9.2))
 image = ax.imshow(stage_means[:, order].T, cmap="YlOrRd", vmin=0, vmax=1, aspect="auto")
 ax.set_xticks(np.arange(len(stages)), stages)
-ax.set_yticks(np.arange(0, 59, 5), [f"GEP{i + 1:02d}" for i in order[::5]])
+ax.set_yticks(np.arange(len(order)), [f"GEP{i + 1:02d}" for i in order], fontsize=7.5)
+selected_geps = {gep for gep, _, _ in examples}
+for tick, component in zip(ax.get_yticklabels(), order + 1):
+    if component in selected_geps:
+        tick.set_fontweight("bold")
 ax.set_xlabel("Developmental stage")
-ax.set_ylabel("Signal GEPs ordered by temporal deployment")
+ax.set_ylabel("Signal GEP")
 for spine in ax.spines.values():
     spine.set_visible(False)
 fig.colorbar(image, ax=ax, fraction=0.025, pad=0.02,
-             label="Mean activity, normalized within GEP")
+             label="Relative mean activity (maximum within GEP = 1)")
 fig.tight_layout()
 plt.show()
 
 
 # %% [markdown]
-# Five representative GEPs illustrate chondrogenic, epithelial, neural and two
-# distinct contractile programs. Each figure follows one program across all
-# eight stages. The top row shows SORT activity and the lower row highlights
-# the corresponding atlas annotation.
+# ## 5. Follow individual programs in space
+#
+# Follow each selected program across all eight stages. The top row shows
+# SORT activity and the lower row highlights the atlas annotation specified in
+# `examples`. Use these maps to examine the program's spatial deployment.
 
 # %%
-examples = [
-    (25, "Chondrogenic", "Cartilage"),
-    (31, "Epithelial", "Epidermis"),
-    (2, "Neural", "Brain"),
-    (6, "Sarcomeric", "Muscle"),
-    (43, "Smooth-contractile", "Smooth muscle"),
-]
 coordinates = np.asarray(adata.obsm["spatial"], dtype=float)
 annotations = adata.obs["annotation"].astype(str).to_numpy(dtype=str)
 

@@ -16,3 +16,4 @@ tutorial_outputs/
 .DS_Store
 !tests/data/*.npz
 !data/simulation/simulation.h5ad
+outputs/

@@ -1,0 +1,5 @@
+/* Present notebook cells as code blocks without execution-counter labels. */
+.nbinput .prompt,
+.nboutput .prompt {
+    display: none;
+}
